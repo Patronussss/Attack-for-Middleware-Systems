@@ -17,6 +17,8 @@ The code consists of several files, each serving distinct purposes.
 * **`functions.py`**: Defines some functions to be used in the attack.
 * **`DataSolve.py`**: Process the raw dataset to get the csv file for the attack.
 * **`diagnosis_codes.json`**：ICD-9-CM code
+* **`EnhancedCumulativeAttack.py`**: Implementing Cumulative Attack.
+* **`AttackusingAuxiliary.py`**: Implementing Feature Inference Attack.
 
 * **`Attack under A1.py`**: Implementing attacks under Assumption 1.
 
