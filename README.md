@@ -1,6 +1,6 @@
-# Case Study: Database Recovery Attacks on Datablinder by Exploiting Attribute Correlations in Encrypted Databases
+# DataBlinder Under Attack: Exploiting Multi-Layer Encryption Weaknesses in Middleware Systems
 
-python code for the paper "Case Study: Database Recovery Attacks on Datablinder by Exploiting Attribute Correlations in Encrypted Databases"
+python code for the paper "DataBlinder Under Attack: Exploiting Multi-Layer Encryption Weaknesses in Middleware Systems"
 
 ## 1. Requirements
 
@@ -23,8 +23,6 @@ The code consists of several files, each serving distinct purposes.
 * **`Attack under A2.py`**: Implementing attacks under Assumption 2.
 
 * **`Attack under A3.py`**: Implementing attacks under Assumption 3.
-
-* **`Attack under A4.py`**: Implementing attacks under Assumption 4.
 
 * **`getFrequency.py`**: Counting the frequency of keyword queries on *Google Trends*.
 
