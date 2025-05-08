@@ -1,178 +1,217 @@
+import sys
+sys.path.append("F:/Desktop/Supplementary experiments") 
 import functions
-import os 
 import csv
-import random
 from tqdm import tqdm
+import pandas as pd
+import os 
+import re
+import random
+import numpy as np
 from collections import Counter
+import math
+
+def euclidean_distance(dict1, dict2):
+    distance = 0
+    if len(dict1) != len(dict2):
+        all_keys = set(dict1.keys()).union(dict2.keys())  # 获取两个字典的所有键
+        sorted_keys = sorted(all_keys)  # 对键进行排序
+
+        
+        values1 = [dict1.get(key, 0) for key in sorted_keys]  # 提取第一个字典的值，如果键不存在则填充为0
+        values2 = [dict2.get(key, 0) for key in sorted_keys]  # 提取第二个字典的值，如果键不存在则填充为0
+
+        # 计算这两个列表之间的欧氏距离
+        distance = math.sqrt(sum((value1 - value2) ** 2 for value1, value2 in zip(values1, values2)))
+    else:
+        values1 = sorted(dict1.values())
+        values2 = sorted(dict2.values())
+
+        # 计算这两个列表之间的欧氏距离
+        distance = math.sqrt(sum((value1 - value2) ** 2 for value1, value2 in zip(values1, values2)))
+
+    return distance
+
+def select_rows_and_generate_matrix(num_rows, csv_file):
+    # 用于存储最终选择的行，包括表头
+    selected_rows = []
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        # 将CSV文件的所有行读取到一个列表中
+        all_rows = list(reader)
+        header = all_rows[0]
+        data_rows = all_rows[1:]
+        
+        # 检查请求的行数是否超过CSV文件中的总行数（不包括表头）
+        if num_rows > len(data_rows):
+            raise ValueError("请求的行数超过CSV文件中的总行数")
+        selected_data_rows = random.sample(data_rows, num_rows)
+        selected_rows.append(header)
+        selected_rows.extend(selected_data_rows)
+    return selected_rows
+
+def write_dicts_to_txt(column_count, recovered_count, output_file):
+    with open(output_file, 'w') as file:
+        for key in column_count.keys():
+            line = f"{key}: {column_count[key]} columns need recovery, {recovered_count[key]} columns successfully recovered\n"
+            file.write(line)
+
+def generate_submatrix(matrix, columns):
+    # 获取表头
+    header = matrix[0]
+    # 找到选定列的索引
+    header_indices = [header.index(col) for col in columns]
+    # 创建子矩阵并保留表头
+    submatrix = [columns]  # 添加新的表头
+    for row in matrix[1:]:
+        subrow = [row[i] for i in header_indices]
+        submatrix.append(subrow)
+    return submatrix
+
+# 读取CSV文件并生成矩阵
+def read_csv_to_matrix(file_path):
+    matrix = []
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            matrix.append(row)
+    return matrix
+
+def shuffle_matrix(matrix):
+    df = pd.DataFrame(matrix)
+    df.columns = matrix[0]
+    new_matrix = df[1:].take(np.random.permutation(len(matrix[0])),axis=1).take(np.random.permutation(len(df[1:])),axis=0)
+    new_matrix1 = new_matrix.values.tolist()
+    new_matrix = [new_matrix.columns.values.tolist()] + new_matrix1
+    return new_matrix
+
+def count_column_elements(matrix):
+    header = matrix[0]
+    result = {}
+    for col_idx in range(0, len(matrix[0])):
+        col_name = header[col_idx]
+        col_freq = {}
+        if col_name == "Hospital" or col_name == "Pincipal Diagnosis":
+            col_freq = {}
+        else:
+            for row in matrix[1:]:
+                element = row[col_idx]
+                if element in col_freq:
+                    col_freq[element] += 1
+                else:
+                    col_freq[element] = 1
+        result[col_name] = col_freq
+    return result
+
+def is_unique_value(dictionary, value):
+    value_count = 0
+    for val in dictionary.values():
+        if val == value:
+            value_count += 1
+            if value_count > 1:
+                return False
+    return True
+
+# 提取指定行数的子矩阵作为敌手拿到的明文信息
+def random_submatrix(matrix, num_rows):
+    header = matrix[0]
+    data = matrix[1:]
+    
+    random_rows = random.sample(data, num_rows)
+    submatrix = [header] + random_rows
+    
+    return submatrix
+
+def convert_nested_counts_to_frequencies(nested_count_dict):
+    frequency_dict = {}
+    
+    for col_name, sub_dict in nested_count_dict.items():
+        total_count = sum(sub_dict.values())
+        frequency_dict[col_name] = {key: value / total_count for key, value in sub_dict.items()}
+    
+    return frequency_dict
+
+filePathPlain = "F:/Desktop/Attack for Datablinder/2015/PUDF_base1_1q2015.csv"
+matrixP = functions.read_csv_to_matrix(filePathPlain)
 
 index_list = [1,2,3,4]
-
 for il in index_list:
-    base = str(il) + 'q2010/'
-    target = str(il) + 'q2010/'
-    out = str(il) + 'q2010 outpuut of A1'
-    lists = [i[:-4] for i in os.listdir(out)]
+    base = 'F:\\Desktop\\Supplementary experiments\\New Dataset\\'+ str(il)+ 'q2010/'
     file_list = os.listdir(base)
     for file_name in sorted(file_list):
-        filePath = os.path.join(base,file_name)
-        filePathPlain = os.path.join(target,file_name)
+        for time in range(1,6):
+            out = 'F:/Desktop/Supplementary experiments/result/A2/'+ str(il)+ 'q2010 output of A2/' + str(time) + '/'
+            if not os.path.exists(out):
+                os.makedirs(out)
+            filePath = os.path.join(base,file_name)
+            matrix = functions.read_csv_to_matrix(filePath)
 
-        matrix_cipher = functions.read_csv_to_matrix(filePath)
-        record_id_mapping = functions.create_rowid_dict(matrix_cipher, matrix_cipher[0], 'Record ID') # 记录行置换情况
+            selected_columns_cipher = ['Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race','Hospital', 'Pincipal Diagnosis']
+            selected_columns_plain = ['Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race']
 
-        selected_columns_ope_det_sse_withoutid = [ 'Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race','Hospital', 'Pincipal Diagnosis']
-        matrix_ods_withoutid = functions.generate_submatrix(matrix_cipher, matrix_cipher[0], selected_columns_ope_det_sse_withoutid)
+            matrix_temp = generate_submatrix(matrix, selected_columns_cipher)
+            matrix_plain = generate_submatrix(matrixP, selected_columns_plain)
 
-        selected_columns_ope_det_sse = ['Record ID', 'Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race','Hospital', 'Pincipal Diagnosis']
-        matrix_cipher_ods = functions.generate_submatrix(matrix_cipher, matrix_cipher[0], selected_columns_ope_det_sse)
+            matrix_cipher =  shuffle_matrix(matrix_temp)
 
-        keyword_count = functions.count_keywords(matrix_ods_withoutid[1:]) # 一共有多少个关键字
-        record_count = len(matrix_cipher) - 1 # 一共有多少条数据
+            unique_elements_cipher = count_column_elements(matrix_cipher)
+            unique_elements_plain = count_column_elements(matrix_plain)
 
-        # 计算OPE+DET的关键字数量
-        selected_columns_ope = ['Record ID', 'Age', 'Admission Type', 'Length of stay', 'Risk']
-        matrix_cipher_ope = functions.generate_submatrix(matrix_cipher, matrix_cipher[0], selected_columns_ope)
-        def custom_sort(row):
-            return tuple(int(cell) if cell.isdigit() else cell for cell in row[1:])
+            unique_counts_cipher = {}
+            for key,value in unique_elements_cipher.items():
+                count = len(value)
+                unique_counts_cipher[key] = count
+            unique_counts_plain = {}
+            for key,value in unique_elements_plain.items():
+                count = len(value)
+                unique_counts_plain[key] = count
 
-        # 按照要求对矩阵进行排序
-        sorted_matrix_cipher = sorted(matrix_cipher_ope, key=custom_sort)
-        # 读取原始CSV文件
-        with open(filePath, 'r') as infile:
-            reader = csv.reader(infile)
-            header = next(reader)  # 保留表头
-            data = [row for row in reader]
+            result = {}
+            for key1, value1 in unique_counts_plain.items():
+                if is_unique_value(unique_counts_plain, value1):
+                    for key2, value2 in unique_counts_cipher.items():
+                        if value2 == value1 and is_unique_value(unique_counts_cipher, value2):
+                            result[key2] = key1
 
-        # 随机打乱行顺序
-        random.shuffle(data)
+            unique_frequency_cipher = convert_nested_counts_to_frequencies(unique_elements_cipher)
+            unique_frequency_plain = convert_nested_counts_to_frequencies(unique_elements_plain)
 
-        with open(filePathPlain, 'w', newline='') as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(header)  # 写入表头
-            writer.writerows(data)
+            for key1, value1 in unique_counts_plain.items():
+                # print(key1, value1)
+                # print("=========")
+                if key1 not in result.keys():
+                    dict1 = unique_frequency_plain[key1]
+                    # print(dict1)
+                    for key2, value2 in unique_counts_cipher.items():
+                        # print(key2, value2)
+                        # print("---------")
+                        if key2 not in result.values() and  abs(value1 - value2) < 500:
+                            dict2 = unique_frequency_cipher[key2]
+                            # print(dict2)
+                            if dict2:
+                                dis = euclidean_distance(dict1, dict2)
+                                # print(key1, key2, dis)
+                                if dis < 0.1:
+                                    result[key2] = key1
+                                    break
+            OPE_list = ['Age', 'Admission Type', 'Length of stay', 'Risk']
+            DET_list = ['Discharge', 'Gender', 'Race']
+            countOPE = 0
+            countDET = 0
+            # print(result)
+            
+            for key, value in result.items():
+                if key == value and key in OPE_list:
+                    countOPE += 1
+                elif key == value and key in DET_list:
+                    countDET += 1
+            column_count = len(unique_elements_plain)
+            recovered_count = countDET + countOPE
 
-        matrix_plain = functions.read_csv_to_matrix(filePathPlain)
-        record_id_mapping_plain = functions.create_rowid_dict(matrix_plain, matrix_plain[0], 'Record ID') # 记录行置换情况
+            file_extension = os.path.splitext(file_name)[1]
+            new_file_name = file_name.replace(file_extension, ".txt")
+            outputPath = os.path.join(out,new_file_name)
+            print(outputPath)
+            with open(outputPath,"w") as f:
+                f.write("keywords number: " + str(column_count) + " successfully recovered keyword number: " + str(recovered_count))
 
-        matrix_plain_ope = functions.generate_submatrix(matrix_plain, matrix_plain[0], selected_columns_ope)
-
-        # 按照要求对矩阵进行排序
-        sorted_matrix_plain = sorted(matrix_plain_ope, key=custom_sort)
-
-        value_mapping = {}
-
-        for i in range(len(sorted_matrix_cipher)):
-            row_cipher = sorted_matrix_cipher[i][1:]  # 去掉第一列
-            row_plain = sorted_matrix_plain[i][1:]   # 去掉第一列
-            if row_cipher == row_plain:
-                # matching_pairs.append((sorted_matrix_cipher[i][0], sorted_matrix_plain[i][0]))  # 记录第一列的值
-                for j in range(len(row_cipher)):
-                    value_mapping[row_cipher[j]] = row_plain[j]
-
-        selected_columns_det = ['Record ID', 'Discharge', 'Gender', 'Race']
-        matrix_cipher_det = functions.generate_submatrix(matrix_cipher, matrix_cipher[0], selected_columns_det)
-
-        element_counts = {}  # 用于存储元素及其出现次数的字典
-        for col_index in range(1, len(matrix_cipher_det[0])):  # 从第二列开始（索引为1）
-            column_data = [row[col_index] for row in matrix_cipher_det]  # 提取该列的数据
-            for element in column_data:
-                if element in element_counts:
-                    element_counts[element] += 1
-                else:
-                    element_counts[element] = 1
-
-        matrix_plain_det = functions.generate_submatrix(matrix_plain, matrix_plain[0], selected_columns_det)
-
-        element_counts_plain = {}  # 用于存储元素及其出现次数的字典
-        for col_index in range(1, len(matrix_plain_det[0])):  # 从第二列开始（索引为1）
-            column_data = [row[col_index] for row in matrix_plain_det]  # 提取该列的数据
-            for element in column_data:
-                if element in element_counts_plain:
-                    element_counts_plain[element] += 1
-                else:
-                    element_counts_plain[element] = 1
-        # print(element_counts_plain)
-
-        for key1, value1 in element_counts.items():
-            for key2, value2 in element_counts_plain.items():
-                if value1 == value2:
-                    value_mapping[key1] = key2
-
-        selected_columns_ope_det = ['Record ID','Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race']
-        matrix_cipher_ope_det = functions.generate_submatrix(matrix_cipher, matrix_cipher[0], selected_columns_ope_det)
-
-        keyword_count_ope_det = len(value_mapping)
-
-        matrix_od_replaced = functions.replace_values_with_none(matrix_cipher_ope_det, value_mapping)
-        unique_rows_replaced = functions.find_unique_rows_withNone(matrix_od_replaced)
-
-        # 开始SSE
-
-        selected_columns_sse = ['Record ID', 'Hospital','Pincipal Diagnosis']
-        data_dict_cipher = {}
-        stop_words = ["and", "of", "or", "for", "with", "to", "not", "by", "in", "the", "but", "from", "as"]
-
-        matrix_cipher_sse = functions.generate_submatrix(matrix_cipher, matrix_cipher[0], selected_columns_sse)
-
-        for row in matrix_cipher_sse:
-            record_id = row[0]
-            for i in range(1, len(row)):
-                word = row[i]
-                if word.lower() not in stop_words:
-                    if word in data_dict_cipher:
-                        data_dict_cipher[word].append(record_id)
-                    else:
-                        data_dict_cipher[word] = [record_id]
-        
-        matrix_recovered = []
-        total_iterations = len(matrix_cipher_sse)
-        with tqdm(total=total_iterations, desc="generating matrix recovered") as pbar:
-            for row in matrix_cipher_sse:
-                if row[0] in unique_rows_replaced:
-                    matrix_recovered.append(row)
-                pbar.update(1)
-        
-        # 生成两个十进制序列及其对应的关键字
-        decimal_sequence1, keywords1 = functions.generate_decimal_sequence(matrix_cipher_sse)
-        decimal_sequence2, keywords2 = functions.generate_decimal_sequence(matrix_cipher_sse)
-
-        # 创建一个映射，将十进制值映射回关键字
-        decimal_to_keyword1 = {decimal: keyword for decimal, keyword in zip(decimal_sequence1, keywords1)}
-        decimal_to_keyword2 = {decimal: keyword for decimal, keyword in zip(decimal_sequence2, keywords2)}
-
-        # 找出每个序列中独特的值（只出现一次的值）
-        unique_values1 = [decimal for decimal in decimal_sequence1 if decimal_sequence1.count(decimal) == 1]
-        unique_values2 = [decimal for decimal in decimal_sequence2 if decimal_sequence2.count(decimal) == 1]
-
-        # 找出两个序列中相同的独特值
-        common_unique_values = set(unique_values1) & set(unique_values2)
-
-        # 记录这些相同的值对应的关键字
-        common_keywords = {decimal_to_keyword1[value]: decimal_to_keyword2[value] for value in common_unique_values if value in decimal_to_keyword1 and value in decimal_to_keyword2}
-        value_mapping.update(common_keywords)
-
-        keyword_count = functions.count_keywords(matrix_cipher_ods)-record_count
-        
-        matrix_s_replaced = functions.replace_values_with_none(matrix_cipher_ods, value_mapping)
-        unique_rows_s_replaced = functions.find_unique_rows_withNone(matrix_s_replaced)
-
-        unique = functions.ind_unique_rows(matrix_cipher_ods)
-
-        keyword_volume = {}
-        for key, value in data_dict_cipher.items():
-            keyword_volume[key] = len(value)
-
-        value_counts = Counter(keyword_volume.values())
-        unique_values = [v for v, count in value_counts.items() if count == 1]
-        _ = [value_mapping.setdefault(value, [value]) for value in unique_values]
-        values = {}
-        for key, value in value_mapping.items():
-            if key == value:
-                values[key] = value
-
-        file_extension = os.path.splitext(file_name)[1]
-        new_file_name = file_name.replace(file_extension, ".txt")
-        outputPath = os.path.join(out,new_file_name)
-
-        with open(outputPath,"w") as f:
-            f.write("record number: " + str(record_count) + " successfully recovered number: " + str(len(unique)) + " keywords number: " + str(keyword_count) + " successfully recovered keyword number: " + str(len(values)) + "SSE+OPE: " + str(keyword_count_ope_det))
