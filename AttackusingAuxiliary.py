@@ -1,5 +1,5 @@
 import sys
-sys.path.append("F:/Desktop/Supplementary experiments") 
+sys.path.append("/media/ices/machenrry/zl/Attack for DataBlinder") 
 import functions
 import pandas as pd
 import numpy as np
@@ -8,6 +8,7 @@ import time
 import os
 import networkx as nx
 from tqdm import tqdm
+import math
 
 def compute_feature_vector(matrix, select_column, dataset_name):
     # 获取表头
@@ -78,6 +79,45 @@ def compute_feature_vector(matrix, select_column, dataset_name):
 
     return result
 
+def compute_cost_matrix_weight(feature_cipher_dict, freq_cipher_dict, vol_cipher_dict, feature_plain_dict, freq_plain_dict, vol_plain_dict, weight=[0.35, 0.45, 0.2]):
+    cost_matrix = np.full((len(freq_cipher_dict), len(freq_plain_dict)), np.inf)
+    sorted_cipher_keys = sorted(freq_cipher_dict.keys())
+    sorted_plain_keys = sorted(freq_plain_dict.keys())
+    a = weight[0]
+    b = weight[1]
+    c = weight[2]
+    print(f"权重设置为: a={a}, b={b}, c={c}")
+
+    # 创建密文key到index的映射
+    cipher_key_to_idx = {k: i for i, k in enumerate(sorted_cipher_keys)}
+    plain_key_to_idx = {k: i for i, k in enumerate(sorted_plain_keys)}
+
+    for keyword in tqdm(sorted_cipher_keys):
+        cipher_idx = cipher_key_to_idx[keyword]
+        feature_cipher = feature_cipher_dict[keyword]
+        freq_cipher = freq_cipher_dict[keyword]
+        vol_cipher = vol_cipher_dict[keyword]
+        
+        for keyword_plain in sorted_plain_keys:
+            plain_idx = plain_key_to_idx[keyword_plain]
+            feature_plain = feature_plain_dict[keyword_plain]
+            freq_plain = freq_plain_dict[keyword_plain]
+            vol_plain = vol_plain_dict[keyword_plain]
+            
+            # 计算三个代价并相加
+            # 计算特征向量的欧氏距离
+            fea_cost = np.linalg.norm(np.array(feature_cipher) - np.array(feature_plain))
+            # 计算频率向量的欧氏距离
+            freq_cost = np.linalg.norm(np.array(freq_cipher) - np.array(freq_plain))
+            # 计算体积（标量）的绝对差
+            # vol_cost = (vol_cipher - vol_plain) ** 2
+            vol_cost = math.sqrt((vol_cipher - vol_plain) ** 2)
+            total_cost = a * fea_cost + b * freq_cost + c * vol_cost
+            
+            # 按照key的index存储总代价
+            cost_matrix[cipher_idx, plain_idx] = total_cost
+    return cost_matrix
+
 def compute_cost_matrix(feature_cipher_dict, freq_cipher_dict, vol_cipher_dict, feature_plain_dict, freq_plain_dict, vol_plain_dict):
     cost_matrix = np.full((len(freq_cipher_dict), len(freq_plain_dict)), np.inf)
     sorted_cipher_keys = sorted(freq_cipher_dict.keys())
@@ -105,8 +145,9 @@ def compute_cost_matrix(feature_cipher_dict, freq_cipher_dict, vol_cipher_dict, 
             # 计算频率向量的欧氏距离
             freq_cost = np.linalg.norm(np.array(freq_cipher) - np.array(freq_plain))
             # 计算体积（标量）的绝对差
-            vol_cost = (vol_cipher - vol_plain) ** 2
-            total_cost = 10 * fea_cost + freq_cost + vol_cost
+            # vol_cost = (vol_cipher - vol_plain) ** 2
+            vol_cost = math.sqrt((vol_cipher - vol_plain) ** 2)
+            total_cost = 10 * fea_cost + 1 * freq_cost + 1 * vol_cost
             
             # 按照key的index存储总代价
             cost_matrix[cipher_idx, plain_idx] = total_cost
@@ -159,6 +200,82 @@ def auction_algorithm(cost_matrix, epsilon=0.1):
     pbar.close()
     return assignments
 
+def AttackUsingAuxiliaryWeight(matrix_cipher, matrix_plain, selected_column_sse, dataset_name, weight):
+    startTime = time.time()
+
+    # matrix_cipher = functions.read_csv_to_matrix(filePath)
+    # selected_column_sse = ['Hospital','Pincipal Diagnosis']
+
+    
+    matrix_cipher_sse = functions.generate_submatrix(matrix_cipher, selected_column_sse)
+    keyword_count = functions.count_keywords(matrix_cipher_sse[1:]) # 一共有多少个关键字
+    matrix_plain_sse = functions.generate_submatrix(matrix_plain, selected_column_sse)
+
+    # 每个关键字的volume
+    volumn_cipher_sse = functions.count_frequency_multicol(np.array(matrix_cipher_sse[1:]), matrix_cipher_sse[0])
+    volumn_plain_sse = functions.count_frequency_multicol(np.array(matrix_plain_sse[1:]), matrix_plain_sse[0])
+
+    value_mapping = {}
+    for key, dict1 in volumn_cipher_sse.items():
+        dict2 = volumn_plain_sse[key]
+        temp = functions.find_closest_mapping(dict1, dict2)
+        value_mapping.update(temp)
+
+    for column in selected_column_sse:
+        plain = functions.extract_columns(matrix_plain, column)
+        cipher = functions.extract_columns(matrix_cipher, column)
+        keyword_list = list(set(plain).union(cipher))
+
+        frquency_dict = {}
+        frequency_folder = '/media/ices/machenrry/zl/Attack for DataBlinder/frequency/'
+        for value in keyword_list:
+            csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
+            if os.path.exists(csv_file_path):
+                value_dict = functions.process_csv_file(csv_file_path)
+                frquency_dict[value] = value_dict
+
+        freq_cipher_dict = {key: value for key,value in frquency_dict.items() if key in cipher}
+        freq_plain_dict = {key: value for key,value in frquency_dict.items() if key in plain}
+
+        # Step 1 计算v = 匹配上的文档数/总文档数
+        volume_cipher_dict = volumn_cipher_sse[column]
+        volume_plain_dict = volumn_plain_sse[column]
+
+        # 前者是每个时间间隔内的查询频率，后者是总的查询频率
+        freq_cipher_dict_inPeriod, freq_cipher_dict_Total = functions.numToFreqency(freq_cipher_dict)
+        freq_plain_dict_inPeriod, freq_plain_dict_Total = functions.numToFreqency(freq_plain_dict)
+
+        feature_vector_cipher = compute_feature_vector(matrix_cipher, column, dataset_name)
+        feature_vector_plain = compute_feature_vector(matrix_plain, column, dataset_name)
+
+        cost_matrix = compute_cost_matrix_weight(feature_vector_cipher, freq_cipher_dict_inPeriod, volume_cipher_dict, 
+                                        feature_vector_plain, freq_plain_dict_inPeriod, volume_plain_dict, weight)
+        
+        assignments = auction_algorithm(cost_matrix)
+
+        sorted_cipher = sorted(freq_cipher_dict_inPeriod.keys())
+        sorted_plain = sorted(freq_plain_dict_inPeriod.keys())
+
+        # 输出匹配结果
+        mapping = {}
+        for i, assignment in enumerate(assignments):
+            mapping[sorted_cipher[i]] = sorted_plain[assignment]
+        value_mapping.update(mapping)
+
+        
+
+    endTime = time.time()
+    totalTime = round(endTime - startTime, 2)
+
+    accuracy = 0
+    count = 0
+    for key, value in value_mapping.items():
+        if key == value:
+            count += 1
+
+    accuracy = count / keyword_count
+    return value_mapping, totalTime, accuracy, keyword_count
+
 def AttackUsingAuxiliary(matrix_cipher, matrix_plain, selected_column_sse, dataset_name):
     startTime = time.time()
 
@@ -186,7 +303,7 @@ def AttackUsingAuxiliary(matrix_cipher, matrix_plain, selected_column_sse, datas
         keyword_list = list(set(plain).union(cipher))
 
         frquency_dict = {}
-        frequency_folder = 'F:/Desktop/Supplementary experiments/frequency/'
+        frequency_folder = '/media/ices/machenrry/zl/Attack for DataBlinder/frequency'
         for value in keyword_list:
             csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
             if os.path.exists(csv_file_path):
@@ -233,48 +350,86 @@ def AttackUsingAuxiliary(matrix_cipher, matrix_plain, selected_column_sse, datas
             count += 1
 
     accuracy = count / keyword_count
-    return value_mapping, totalTime, accuracy
+    return value_mapping, totalTime, accuracy, keyword_count
 
 if __name__ == '__main__':
-    # root = "F:/Desktop/Attack for Datablinder/1q2010/text_538066.csv"
-    # filePathPlain = "F:/Desktop/Attack for Datablinder/2015/2015.csv"
-    # filePath = "F:/Desktop/Supplementary experiments/Crime_cipher.csv"
-    # matrix_cipher = functions.read_csv_to_matrix(filePath)
-    # filePathPlain = "F:/Desktop/Supplementary experiments/Crime_plain.csv"
+    # root = "dataset/text_508029.csv"
+    # filePathPlain = "dataset/2015.csv"
+    # out = 'result/output of SSEAttack-weight.txt'
     # matrix_plain = functions.read_csv_to_matrix(filePathPlain)
-    # root = "F:/Desktop/Supplementary experiments/test.csv"
-    # filePathPlain = "F:/Desktop/Supplementary experiments/train.csv"
-    # selected_columns_sse = ["Crm_Cd_Desc"]
-    # mapping, totalTime, accuracy = AttackUsingAuxiliary(matrix_cipher, matrix_plain, selected_columns_sse, "Crime")
-    # print(accuracy)
-    root = "F:/Desktop/Attack for Datablinder/"
-    filePathPlain = "F:/Desktop/Attack for Datablinder/2015/2015.csv"
-    quarters = ['4q2010']# '1q2010', '2q2010', '3q2010',
-    out = 'result/output of SSEAttack-ours.txt'
+
+    # base = 500000
+    # matrix = functions.read_csv_to_matrix(root)
+
+    # alpha = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 
+    #          0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+    # with open(out, 'w', encoding='utf-8') as f:
+    #     for a in alpha: # fea
+    #         for b in alpha: # freq
+    #             if a+b < 1:
+    #                 c = round(1 - a - b, 2) # vol
+    #             # for c in alpha:
+    #                 weight = [a * 100, b * 100, c * 100]
+    #                 print(weight)
+    #                 selected_columns_ope_withoutid = ['Hospital','Pincipal Diagnosis']
+    #                 total_times = []
+    #                 accuracies = []
+    #                 keyword_counts = []
+    #                 # 每个文件运行1次
+    #                 for _ in range(10):
+    #                     matrix_cipher = functions.random_extract(matrix, base)
+    #                     mapping, totalTime, accuracy, keyword_count = AttackUsingAuxiliaryWeight(matrix_cipher, matrix_plain, selected_columns_ope_withoutid, "PUDF", weight)
+    #                     total_times.append(totalTime)
+    #                     accuracies.append(accuracy)
+    #                     keyword_counts.append(keyword_count)
+
+    #                 # 计算平均值
+    #                 avg_time = sum(total_times) / 10
+    #                 avg_accuracy = sum(accuracies) / 10
+    #                 avg_count = sum(keyword_counts) / 10
+    #                 print(avg_accuracy)
+    #                 # 写入结果
+    #                 f.write(f"权重 {weight}, 执行时间: {avg_time}秒, 准确率: {avg_accuracy}, 关键字数量: {avg_count}, 实际恢复: {len(mapping) * avg_accuracy}\n")
+    #                 f.write("-" * 50 + "\n")
+    #             else:
+    #                 continue
+
+
+
+
+
+
+    root = "dataset/text_508029.csv"
+    filePathPlain = "dataset/2015.csv"
+    out = 'result/single/output of SSEAttack-011.txt'
     matrix_plain = functions.read_csv_to_matrix(filePathPlain)
-    # 打开输出文件
+
+    base = [500, 725, 1050, 1525, 2210, 3205, 4645, 6735, 9765, 14160, 20530, 29770, 43170, 62600, 90750, 131600, 190850, 276750, 401300, 508029]
+    matrix = functions.read_csv_to_matrix(root)
+
     with open(out, 'w', encoding='utf-8') as f:
-        for base in quarters:
-            rootPath = os.path.join(root,base)
-            file_list = os.listdir(rootPath)
-            for file_name in file_list:
-                filePath = os.path.join(rootPath,file_name)
-                # filePathPlain = os.path.join(rootPath,file_name)
-                matrix_cipher = functions.read_csv_to_matrix(filePath)
-                name = os.path.join(base, file_name)
-                selected_column_sse = ['Hospital','Pincipal Diagnosis']
-                print(name)
-                # 每个文件运行10次取平均值
-                total_times = []
-                accuracies = []
-                for _ in range(10):
-                    mapping, totalTime, accuracy = AttackUsingAuxiliary(matrix_cipher, matrix_plain, selected_column_sse, "PUDF")
-                    total_times.append(totalTime)
-                    accuracies.append(accuracy)
-                
-                # 计算平均值
-                avg_time = sum(total_times) / 10
-                avg_accuracy = sum(accuracies) / 10
-                # 将结果写入文件
-                f.write(f"文件路径: {name}, 执行时间: {totalTime}秒, 准确率: {accuracy}\n")
-                f.write("-" * 50 + "\n")
+        
+        for i in base:
+            # weight = [5.0, 60.0, 35.0] # freq, cdf, cooc
+            weight = [0, 50, 50]
+            selected_columns_ope_withoutid = ['Hospital','Pincipal Diagnosis']
+            total_times = []
+            accuracies = []
+            keyword_counts = []
+            # 每个文件运行1次
+            for _ in range(50):
+                matrix_cipher = functions.random_extract(matrix, i)
+                mapping, totalTime, accuracy, keyword_count = AttackUsingAuxiliaryWeight(matrix_cipher, matrix_plain, selected_columns_ope_withoutid, "PUDF", weight)
+                total_times.append(totalTime)
+                accuracies.append(accuracy)
+                keyword_counts.append(keyword_count)
+
+            # 计算平均值
+            avg_time = sum(total_times) / 50
+            avg_accuracy = sum(accuracies) / 50
+            avg_count = sum(keyword_counts) / 50
+            print(avg_accuracy)
+            # 写入结果
+            f.write(f"权重 {weight}, 执行时间: {avg_time}秒, 准确率: {avg_accuracy}, 关键字数量: {avg_count}, 实际恢复: {len(mapping) * avg_accuracy}\n")
+            f.write("-" * 50 + "\n")
