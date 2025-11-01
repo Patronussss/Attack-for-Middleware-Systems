@@ -11,6 +11,75 @@ from scipy.optimize import linear_sum_assignment
 from datetime import datetime
 from tqdm import tqdm
 
+def compute_feature_vector(matrix, select_column, dataset_name):
+    # 获取表头
+    headers = matrix[0]
+    # 找到A列的索引
+    a_index = headers.index(select_column)
+    if dataset_name == "PUDF":
+        specified_values = {
+    "Age": ["0 year", "1 year", "5 year", "10 year", "15 year", "18 year",
+        "20 year", "25 year", "30 year", "35 year", "40 year", "45 year", "50 year", 
+        "55 year", "60 year", "65 year", "70 year", "75 year", "80 year", "85 year", "90 year"],
+    "Gender": ["F", "M"],
+    "Risk": ["Minor", "Moderate", "Major", "Extreme"],
+    "Admission Type": ["Emergency", "Urgent", "Elective", "Newborn", "Trauma_Center", "Others"],
+    "Race": ["American_Indian/Eskimo/Aleut","Asian_or_Pacific_Islander", 
+            "Black", "White", "Others", "Invalid", "Hispanic"]
+    }
+        # 定义要统计取值范围的列
+        specific_columns = ["Age", "Gender",  "Risk", "Admission Type", "Race"]
+    # 获取这些列的索引
+    if dataset_name == "Alzheimer":
+        specified_values = {
+            "YearStart": ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
+            "LocationAbbr": ["FL", "AR", "LA", "GA", "MA", "NE", "MDW", "MO", "DE", "DC", "IL", "AK", "OK", "SOU",
+            "TX", "IA", "MD", "PA", "WI", "AZ", "KS", "ND", "OH", "NM", "UT", "WEST", "NH", "US", "NV", "WA", "RI", "ME", "VT", "ID",
+            "AL", "MI", "SD", "CT", "NC", "TN", "WV", "WY", "VA", "NJ", "CA", "OR", "MS", "HI", "NY", "MN", "CO", "PR", "KY", "IN", "MT",
+            "NRE", "SC", "GU", "VI"],
+            "Stratification2": ["Native am/Alaskan Native", "Asian/Pacific Islander", "Black, non-Hispanic", "White, non-Hispanic", "Hispanic", "Female", "Male"],
+            "Class": ["Mental Health", "Overall Health", "Caregiving", "Nutrition/Physical Activity/Obesity", "Screenings and  Vaccines", "Smoking and Alcohol  Use", "Cognitive Decline"],
+            "DataValueTypeID" : ["PRCTG", "MEAN"]
+        }
+        specific_columns = ["YearStart", "LocationAbbr",  "Stratification2", "Class", "DataValueTypeID"]
+    if dataset_name == "Crime":
+        specified_values = {
+            'AREA NAME': ["Wilshire", "Central", "Southwest", "Van Nuys", "Hollywood", "Southeast", "Newton"," Mission", "Rampart", "West Valley", 
+            "77th Street", "Devonshire", "Foothill", "Harbor", "Hollenbeck", "N Hollywood", "Northeast", "Olympic", "Pacific", "Topanga", "West LA"],
+            'Vict Sex': ['F', 'M', 'H', 'X', '-'],
+            'Part 1-2': ['1','2'],
+            'Status': ['AA','AO', 'CC', 'IC', 'JA', 'JO']
+        }
+        specific_columns = ["AREA NAME", "Vict Sex",  "Part 1-2", "Status"]
+    specific_indices = [headers.index(col) for col in specific_columns]
+
+    # 初始化一个字典来存储A列每个值对应的特定列的数据
+    data_dict = {}
+    for row in matrix[1:]:
+        a_value = row[a_index]
+        if a_value == "zlzlzl":
+            continue
+        if a_value not in data_dict:
+            data_dict[a_value] = {col: [] for col in specific_columns}
+        for col, index in zip(specific_columns, specific_indices):
+            value = row[index]
+            # 若特定列的值为zlzlzl则跳过该值
+            if value != "zlzlzl":
+                data_dict[a_value][col].append(value)
+
+    # 统计每个A列值对应的特定列的取值比例
+    result = {}
+    for a_value, col_data in data_dict.items():
+        result[a_value] = []
+        for col in specific_columns:
+            values = col_data[col]
+            value_count = len(values)
+            value_proportion = {val: values.count(val) / value_count for val in set(values)}
+            vector = [value_proportion.get(val, 0) for val in specified_values[col]]
+            result[a_value].extend(vector)
+
+    return result
+
 # 根据表头选择特定列生成子矩阵
 def generate_submatrix(matrix, header, columns):
     header_indices = [matrix[0].index(col) for col in columns]
@@ -25,7 +94,8 @@ def create_rowid_dict(matrix, header, record_id_column):
     rowid_dict = {}
     record_id_index = header.index(record_id_column)
     for index, row in enumerate(matrix[1:], start=1):
-        rowid_dict[index] = row[record_id_index]
+        record_id = row[record_id_index]
+        rowid_dict[record_id] = index
     return rowid_dict
 
 # 读取CSV文件并生成矩阵
@@ -35,6 +105,7 @@ def read_csv_to_matrix(file_path):
         reader = csv.reader(file)
         for row in reader:
             matrix.append(row)
+    file.close()
     return matrix
 
 def count_keywords(matrix):
@@ -304,15 +375,20 @@ def numToFreqency(data_dict):
     data_dict2 = {}
     # 更新每个子字典中的值为频率
     for key, sub_dict in data_dict.items():
-        sub_dict1 = {}
         freq = 0
+        if None in sub_dict.keys():
+            sub_dict.pop(None)
         if not bool(sub_dict):
             continue
         else:
-            for period, count in sub_dict.items():
-                sub_dict1[period] = count / total_frequency
-                freq += count
-            data_dict1[key] = sub_dict1
+            # 获取所有时间间隔并排序
+            sorted_periods = sorted(sub_dict.keys())
+            # 创建按时间顺序排列的频率列表
+            freq_list = []
+            for period in sorted_periods:
+                freq_list.append(sub_dict[period] / total_frequency)
+                freq += sub_dict[period]
+            data_dict1[key] = freq_list
             data_dict2[key] = freq / total_frequency
     return data_dict1, data_dict2
 
@@ -433,8 +509,8 @@ def compute_frequency_and_cdf_A4(data):
         cumulative += count
         # freq[key] /= total
         # cdf[key] = cumulative / total
-        freq[key] = (count / total) * 10000  # 将频率扩大10000倍
-        cdf[key] = (cumulative / total) * 10000  # 将CDF扩大10000倍
+        freq[key] = (count / total)  # 将频率扩大10000倍
+        cdf[key] = (cumulative / total)  # 将CDF扩大10000倍
 
     return freq, cdf
 
@@ -458,26 +534,92 @@ def find_optimal_mapping_A4(data_c, data_z):
     mapping = {keys_c[i]: keys_z[j] for i, j in zip(row_ind, col_ind)}
     return mapping
 
+# def column_frequencies(matrix):
+#     """
+#     计算矩阵中每一列的元素出现频率，并将结果存储到字典中。
+    
+#     :param matrix: 2D numpy array or list of lists
+#     :return: 字典，键为列索引，值为该列元素出现频率的字典
+#     """
+#     # 将输入数据转换为numpy数组
+#     matrix = np.array(matrix)
+#     # 初始化结果字典
+#     frequencies = {}
+    
+#     # 遍历矩阵的每一列
+#     for col_index in range(matrix.shape[1]):
+#         col = matrix[:, col_index]  # 提取列数据
+#         unique, counts = np.unique(col, return_counts=True)  # 计算唯一值及其计数
+#         total = len(col)  # 该列的总元素数量
+#         # 计算频率并保留5位小数
+#         freq_dict = {str(key): round(count / total, 5) for key, count in zip(unique, counts)}
+#         frequencies[col_index] = freq_dict  # 将频率字典存储到列索引对应的位置
+    
+#     return frequencies
+
+def random_extract(matrix, num_rows):
+    """
+    从矩阵中随机抽取指定行数，保留表头
+    
+    参数:
+        matrix: 原始矩阵，list形式，第一行为表头
+        num_rows: 需要抽取的行数（不包含表头）
+    
+    返回:
+        新矩阵，包含表头和随机抽取的行
+    """
+    if len(matrix) <= 1:
+        return matrix  # 只有表头或空矩阵，直接返回
+    
+    # 确保抽取的行数不超过可用数据行
+    data_rows = matrix[1:]  # 所有数据行（排除表头）
+    actual_num = min(num_rows, len(data_rows))
+    
+    # 随机抽取指定数量的行
+    selected_rows = random.sample(data_rows, actual_num)
+    
+    # 组合表头和抽取的行，形成新矩阵
+    return [matrix[0]] + selected_rows
+
 def column_frequencies(matrix):
     """
-    计算矩阵中每一列的元素出现频率，并将结果存储到字典中。
+    高效计算矩阵中每一列的元素出现频率
     
-    :param matrix: 2D numpy array or list of lists
-    :return: 字典，键为列索引，值为该列元素出现频率的字典
+    参数:
+        matrix: 2D numpy array 或 嵌套列表
+    返回:
+        字典，键为列索引，值为该列元素出现频率的字典
     """
-    # 将输入数据转换为numpy数组
-    matrix = np.array(matrix)
-    # 初始化结果字典
+    # 直接处理列表输入，避免重复numpy转换
+    if not isinstance(matrix, np.ndarray):
+        matrix = np.array(matrix)
+    
+    # 提前获取矩阵形状
+    rows, cols = matrix.shape
     frequencies = {}
     
-    # 遍历矩阵的每一列
-    for col_index in range(matrix.shape[1]):
-        col = matrix[:, col_index]  # 提取列数据
-        unique, counts = np.unique(col, return_counts=True)  # 计算唯一值及其计数
-        total = len(col)  # 该列的总元素数量
-        # 计算频率并保留5位小数
-        freq_dict = {str(key): round(count / total, 5) for key, count in zip(unique, counts)}
-        frequencies[col_index] = freq_dict  # 将频率字典存储到列索引对应的位置
+    # 预分配列数组
+    col_array = np.empty(rows, dtype=matrix.dtype)
+    
+    for col_idx in range(cols):
+        # 直接使用numpy的列视图，避免复制
+        col_data = matrix[:, col_idx]
+        
+        # 使用高效的numpy unique函数
+        unique, counts = np.unique(col_data, return_counts=True)
+        total = rows
+        
+        # 使用向量化操作计算频率
+        freq = counts / total
+        
+        # 构建频率字典，保留5位小数
+        # 根据数据类型选择键的存储方式
+        if matrix.dtype.kind in 'iufc':  # 数值类型
+            freq_dict = {key: round(val, 5) for key, val in zip(unique, freq)}
+        else:  # 其他类型转换为字符串
+            freq_dict = {str(key): round(val, 5) for key, val in zip(unique, freq)}
+        
+        frequencies[col_idx] = freq_dict
     
     return frequencies
 
@@ -521,3 +663,11 @@ def find_unique_value(input_list):
     
     unique_values = [key for key, count in value_counts.items() if count == 1]
     return unique_values
+
+def replace_nested_inplace(lst, old_value, new_value):
+    for i in range(len(lst)):
+        if isinstance(lst[i], list):  # 如果是子列表，递归处理
+            replace_nested_inplace(lst[i], old_value, new_value)
+        else:  # 否则直接替换
+            if lst[i] == old_value:
+                lst[i] = new_value
