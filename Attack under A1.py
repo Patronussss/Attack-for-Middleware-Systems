@@ -1,5 +1,5 @@
 import sys
-sys.path.append("F:/Desktop/Supplementary experiments") 
+sys.path.append("/media/ices/machenrry/zl/Attack for DataBlinder/") 
 import functions
 import csv
 from tqdm import tqdm
@@ -131,87 +131,99 @@ def convert_nested_counts_to_frequencies(nested_count_dict):
     
     return frequency_dict
 
-filePathPlain = "F:/Desktop/Attack for Datablinder/2015/PUDF_base1_1q2015.csv"
+filePathPlain = "dataset/2015.csv"
 matrixP = functions.read_csv_to_matrix(filePathPlain)
+root = "dataset/text_508029.csv"
 
-index_list = [1,2,3,4]
-for il in index_list:
-    base = 'F:\\Desktop\\Supplementary experiments\\New Dataset\\'+ str(il)+ 'q2010/'
-    file_list = os.listdir(base)
-    for file_name in sorted(file_list):
-        for time in range(1,6):
-            out = 'F:/Desktop/Supplementary experiments/result/A2/'+ str(il)+ 'q2010 output of A2/' + str(time) + '/'
-            if not os.path.exists(out):
-                os.makedirs(out)
-            filePath = os.path.join(base,file_name)
-            matrix = functions.read_csv_to_matrix(filePath)
+base = [500, 725, 1050, 1525, 2210, 3205, 4645, 6735, 9765, 14160, 20530, 29770, 43170, 62600, 90750, 131600, 190850, 276750, 401300, 508029]
+matrix = functions.read_csv_to_matrix(root)
 
-            selected_columns_cipher = ['Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race','Hospital', 'Pincipal Diagnosis']
-            selected_columns_plain = ['Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race']
+# out = 'result/A2/oringinal/' 
+out = 'result/A2/auxiliary/' 
 
-            matrix_temp = generate_submatrix(matrix, selected_columns_cipher)
-            matrix_plain = generate_submatrix(matrixP, selected_columns_plain)
+if not os.path.exists(out):
+    os.makedirs(out)
 
-            matrix_cipher =  shuffle_matrix(matrix_temp)
+for ind in base:
+    print(ind)
+    recovered_keywords = []
+    keywords_count = []
+    for _ in range(50):
+        matrix_cipher = functions.random_extract(matrix, ind)
+        
+        selected_columns_cipher = ['Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race','Hospital', 'Pincipal Diagnosis']
+        selected_columns_plain = ['Age', 'Admission Type', 'Length of stay', 'Risk','Discharge', 'Gender', 'Race']
+        # num_rows_to_extract =  int((len(matrix_cipher)-1) * 0.9)
+        # matrixP = functions.random_submatrix(matrix_cipher, num_rows_to_extract)
+        matrix_temp = generate_submatrix(matrix, selected_columns_cipher)
+        matrix_plain = generate_submatrix(matrixP, selected_columns_plain)
 
-            unique_elements_cipher = count_column_elements(matrix_cipher)
-            unique_elements_plain = count_column_elements(matrix_plain)
+        matrix_cipher =  shuffle_matrix(matrix_temp)
 
-            unique_counts_cipher = {}
-            for key,value in unique_elements_cipher.items():
-                count = len(value)
-                unique_counts_cipher[key] = count
-            unique_counts_plain = {}
-            for key,value in unique_elements_plain.items():
-                count = len(value)
-                unique_counts_plain[key] = count
+        unique_elements_cipher = count_column_elements(matrix_cipher)
+        unique_elements_plain = count_column_elements(matrix_plain)
 
-            result = {}
-            for key1, value1 in unique_counts_plain.items():
-                if is_unique_value(unique_counts_plain, value1):
-                    for key2, value2 in unique_counts_cipher.items():
-                        if value2 == value1 and is_unique_value(unique_counts_cipher, value2):
-                            result[key2] = key1
+        unique_counts_cipher = {}
+        for key,value in unique_elements_cipher.items():
+            count = len(value)
+            unique_counts_cipher[key] = count
+        unique_counts_plain = {}
+        for key,value in unique_elements_plain.items():
+            count = len(value)
+            unique_counts_plain[key] = count
 
-            unique_frequency_cipher = convert_nested_counts_to_frequencies(unique_elements_cipher)
-            unique_frequency_plain = convert_nested_counts_to_frequencies(unique_elements_plain)
+        result = {}
+        for key1, value1 in unique_counts_plain.items():
+            if is_unique_value(unique_counts_plain, value1):
+                for key2, value2 in unique_counts_cipher.items():
+                    if value2 == value1 and is_unique_value(unique_counts_cipher, value2):
+                        result[key2] = key1
 
-            for key1, value1 in unique_counts_plain.items():
-                # print(key1, value1)
-                # print("=========")
-                if key1 not in result.keys():
-                    dict1 = unique_frequency_plain[key1]
-                    # print(dict1)
-                    for key2, value2 in unique_counts_cipher.items():
-                        # print(key2, value2)
-                        # print("---------")
-                        if key2 not in result.values() and  abs(value1 - value2) < 500:
-                            dict2 = unique_frequency_cipher[key2]
-                            # print(dict2)
-                            if dict2:
-                                dis = euclidean_distance(dict1, dict2)
-                                # print(key1, key2, dis)
-                                if dis < 0.1:
-                                    result[key2] = key1
-                                    break
-            OPE_list = ['Age', 'Admission Type', 'Length of stay', 'Risk']
-            DET_list = ['Discharge', 'Gender', 'Race']
-            countOPE = 0
-            countDET = 0
-            # print(result)
-            
-            for key, value in result.items():
-                if key == value and key in OPE_list:
-                    countOPE += 1
-                elif key == value and key in DET_list:
-                    countDET += 1
-            column_count = len(unique_elements_plain)
-            recovered_count = countDET + countOPE
+        unique_frequency_cipher = convert_nested_counts_to_frequencies(unique_elements_cipher)
+        unique_frequency_plain = convert_nested_counts_to_frequencies(unique_elements_plain)
 
-            file_extension = os.path.splitext(file_name)[1]
-            new_file_name = file_name.replace(file_extension, ".txt")
-            outputPath = os.path.join(out,new_file_name)
-            print(outputPath)
-            with open(outputPath,"w") as f:
-                f.write("keywords number: " + str(column_count) + " successfully recovered keyword number: " + str(recovered_count))
+        for key1, value1 in unique_counts_plain.items():
+            # print(key1, value1)
+            # print("=========")
+            if key1 not in result.keys():
+                dict1 = unique_frequency_plain[key1]
+                # print(dict1)
+                for key2, value2 in unique_counts_cipher.items():
+                    # print(key2, value2)
+                    # print("---------")
+                    if key2 not in result.values() and  abs(value1 - value2) < 500:
+                        dict2 = unique_frequency_cipher[key2]
+                        # print(dict2)
+                        if dict2:
+                            dis = euclidean_distance(dict1, dict2)
+                            # print(key1, key2, dis)
+                            if dis < 0.1:
+                                result[key2] = key1
+                                break
+        OPE_list = ['Age', 'Admission Type', 'Length of stay', 'Risk']
+        DET_list = ['Discharge', 'Gender', 'Race']
+        countOPE = 0
+        countDET = 0
+        # print(result)
+        
+        for key, value in result.items():
+            if key == value and key in OPE_list:
+                countOPE += 1
+            elif key == value and key in DET_list:
+                countDET += 1
+        column_count = len(unique_elements_plain)
+        recovered_count = countDET + countOPE
+        recovered_keywords.append(recovered_count)
+        keywords_count.append(column_count)
+
+    avg_keyword_number = sum(keywords_count) / 50
+    avg_recovered_keywords = sum(recovered_keywords) / 50
+
+
+    new_file_name = "text_" + str(ind) + ".txt"
+    
+    outputPath = os.path.join(out,new_file_name)
+    print(outputPath)
+    with open(outputPath,"w") as f:
+        f.write("keywords number: " + str(avg_keyword_number) + " successfully recovered keyword number: " + str(avg_recovered_keywords))
 
