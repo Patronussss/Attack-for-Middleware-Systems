@@ -28,10 +28,10 @@ def process_matrix_from_mapping(matrix, columns, replacement_dict):
 
 year = 2010
 
-filePathPlain = f"/media/ices/machenrry/zl/Attack for DataBlinder/dataset/2015.csv"
+filePathPlain = f"/CCS2026/dataset/2015.csv"
 matrix_plain = functions.read_csv_to_matrix(filePathPlain)
-out = f'/media/ices/machenrry/zl/Attack for DataBlinder/result/CCS/A2-Padding/' 
-root = f"/media/ices/machenrry/zl/Attack for DataBlinder/dataset/text_508029.csv"
+out = f'/CCS2026/result/CCS/A2-Padding/' 
+root = f"/CCS2026/dataset/text_508029.csv"
 base = [500, 725, 1050, 1525, 2210, 3205, 4645, 6735, 9765, 14160, 20530, 29770, 43170, 62600, 90750, 131600, 190850, 276750, 401300, 508029]
 
 matrix = functions.read_csv_to_matrix(root)
