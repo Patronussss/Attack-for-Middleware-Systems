@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 from ours.EnhancedCumulativeAttack import EnhancedCumulativeAttack
 from ours.AttackusingAuxiliary import AttackUsingAuxiliaryWeight
@@ -28,10 +28,10 @@ def process_matrix_from_mapping(matrix, columns, replacement_dict):
 
 year = 2010
 
-filePathPlain = f"/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/2015.csv"
+filePathPlain = f"/CCS2026//dataset/2015.csv"
 matrix_plain = functions.read_csv_to_matrix(filePathPlain)
-out = f'/media/data1/mcr/zl/zl/AttackForDataBlinder/result/A2-ours/' 
-root = f"/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/text_508029.csv"
+out = f'/CCS2026//result/A2-ours/' 
+root = f"/CCS2026//dataset/text_508029.csv"
 base = [500, 725, 1050, 1525, 2210, 3205, 4645, 6735, 9765, 14160, 20530, 29770, 43170, 62600, 90750, 131600, 190850, 276750, 401300, 508029]
 
 matrix = functions.read_csv_to_matrix(root)
