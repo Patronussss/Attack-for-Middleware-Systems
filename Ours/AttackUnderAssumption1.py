@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder") 
+sys.path.append("//CCS2026/") 
 import functions
 from ours.EnhancedCumulativeAttack import EnhancedCumulativeAttack
 from ours.AttackusingAuxiliary import AttackUsingAuxiliaryWeight
@@ -26,7 +26,7 @@ def process_matrix_from_mapping(matrix, columns, replacement_dict):
                 row[index] = 'zlzlzl'
     return matrix
 
-root = "/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/text_508029.csv"
+root = "//CCS2026//dataset/text_508029.csv"
 
 base = [5000, 10000, 100000, 225000, 337500, 508029]
 frac_list = [0.7, 0.9]
@@ -35,7 +35,7 @@ matrix = functions.read_csv_to_matrix(root)
 for ind in base:
     for frac in frac_list:
         for time_iter in range(50):
-            out = f'/media/data1/mcr/zl/zl/AttackForDataBlinder/result/TIFS/A1-ours/' + str(frac) + '/' + str(time_iter) + '/'
+            out = f'//CCS2026//result/TIFS/A1-ours/' + str(frac) + '/' + str(time_iter) + '/'
             if not os.path.exists(out):
                 os.makedirs(out)
             matrix_c = functions.random_extract(matrix, ind)
