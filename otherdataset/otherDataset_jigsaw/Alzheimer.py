@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder/") 
+sys.path.append("/CCS2026/") 
 import functions
 import csv
 from tqdm import tqdm
@@ -298,7 +298,7 @@ for il in index_list:
 
             hospital_frequency_dict = {}
 
-            frequency_folder = '/media/data1/mcr/zl/zl/AttackForDataBlinder/frequency/'
+            frequency_folder = '/CCS2026/frequency/'
             for value in hospital_list:
                 csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
                 if os.path.exists(csv_file_path):
