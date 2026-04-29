@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/ices/machenrry/zl/Attack for DataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 import pandas as pd
 import numpy as np
@@ -242,7 +242,7 @@ def AttackUsingAuxiliaryWeight(matrix_cipher, matrix_plain, selected_column_sse,
         keyword_list = list(set(plain).union(cipher))
 
         frquency_dict = {}
-        frequency_folder = '/media/ices/machenrry/zl/Attack for DataBlinder/frequency/'
+        frequency_folder = '/CCS2026//frequency/'
         for value in keyword_list:
             csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
             if os.path.exists(csv_file_path):
@@ -318,7 +318,7 @@ def AttackUsingAuxiliary(matrix_cipher, matrix_plain, selected_column_sse, datas
         keyword_list = list(set(plain).union(cipher))
 
         frquency_dict = {}
-        frequency_folder = '/media/ices/machenrry/zl/Attack for DataBlinder/frequency'
+        frequency_folder = '/CCS2026//frequency'
         for value in keyword_list:
             csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
             if os.path.exists(csv_file_path):
