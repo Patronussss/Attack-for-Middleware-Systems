@@ -54,6 +54,7 @@ CCS2026/
 │   ├── Alzheimer_cipher.csv             # Alzheimer ciphertext data
 │   ├── usa_2_plain.csv                # USA crime data plaintext
 │   └── usa_2_cipher.csv               # USA crime data ciphertext
+├── frequency/                  # Search Frequency for each keyword from Google Trends
 ├── functions.py                # Core utility function library
 └── README.md                   # Project documentation
 ```
@@ -157,6 +158,11 @@ CCS2026/
 # Visit the CDC Alzheimer's Disease and Healthy Aging Data Portal
 # Download the Alzheimer's disease-related data
 # Extract and place the CSV files in the dataset/ directory
+```
+
+### 4. Search Frequency
+```bash
+Download from [Google Trends](https://trends.google.com/trends/))
 ```
 
 
