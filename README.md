@@ -168,12 +168,6 @@ Download from [Google Trends](https://trends.google.com/trends/))
 
 ## Experimental Setup
 
-### Data Scale
-Experiments are conducted at different data scales, ranging from 500 records to 113,657 records:
-```python
-base = [500, 11816, 23132, 34448, 45764, 57080, 68396, 79712, 91028, 102344, 113657]
-```
-
 ### Number of Experiments
 - Each data scale runs 50 experiments
 - Calculate the average number of recovered keywords and success rate
