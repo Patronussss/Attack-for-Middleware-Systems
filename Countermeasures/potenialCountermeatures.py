@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/ices/machenrry/zl/Attack for DataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 from ours.EnhancedCumulativeAttack import EnhancedCumulativeAttack
 from Countermeasures.PotenialAttackUsingAuxiliary import AttackUsingAuxiliary
