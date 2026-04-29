@@ -3,7 +3,7 @@ from tqdm import tqdm
 import random
 from collections import Counter
 import sys
-sys.path.append("/media/ices/machenrry/zl/Attack for DataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 import numpy as np
 import os
@@ -27,7 +27,7 @@ def Oya2021Attack(matrix_cipher, matrix_plain):
 
     hospital_frequency_cipher_dict = {}
 
-    frequency_folder = '/media/ices/machenrry/zl/Attack for DataBlinder/frequency/'
+    frequency_folder = '/CCS2026/frequency/'
     for value in hospital_cipher_list:
         csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
         if os.path.exists(csv_file_path):
