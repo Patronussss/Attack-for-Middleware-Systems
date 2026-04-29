@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder/") 
+sys.path.append("/CCS2026/") 
 import functions
 import csv
 from tqdm import tqdm
@@ -237,9 +237,9 @@ def ope_attack_automatic(matrix_cipher, matrix_plain, ope_columns, attr_mapping)
 
     return value_mapping
 
-out = '/media/data1/mcr/zl/zl/AttackForDataBlinder/result/CCS/A4_jigsaw_ACS/'
-filePathPlain = "/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/usa_2_plain.csv"
-root = "/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/usa_2_cipher.csv"
+out = '/CCS2026/result/CCS/A4_jigsaw_ACS/'
+filePathPlain = "/CCS2026/dataset/usa_2_plain.csv"
+root = "/CCS2026/dataset/usa_2_cipher.csv"
 
 base = [500, 11816, 23132, 34448, 45764, 57080, 68396, 79712, 91028, 102344, 113657]
 matrixP = functions.read_csv_to_matrix(filePathPlain)
@@ -312,7 +312,7 @@ for ind in base:
             all_keywords.extend(keyword_list)
 
             frequency_dict = {}
-            frequency_folder = '/media/data1/mcr/zl/zl/AttackForDataBlinder/frequency/'
+            frequency_folder = '/CCS2026/frequency/'
             for value in keyword_list:
                 csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
                 if os.path.exists(csv_file_path):
@@ -339,7 +339,7 @@ for ind in base:
             volume_plain_dict = volumn_plain_sse[sse_col]
 
             frequency_dict = {}
-            frequency_folder = '/media/data1/mcr/zl/zl/AttackForDataBlinder/frequency/'
+            frequency_folder = '/CCS2026/frequency/'
             for value in set(plain_data).union(set(cipher_data)):
                 csv_file_path = os.path.join(frequency_folder, f'{value}.csv')
                 if os.path.exists(csv_file_path):
