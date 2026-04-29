@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 from ours.EnhancedCumulativeAttack import EnhancedCumulativeAttack
 from ours.AttackusingAuxiliary import AttackUsingAuxiliaryWeight
@@ -27,9 +27,9 @@ def process_matrix_from_mapping(matrix, columns, replacement_dict):
     return matrix
 
 
-out = '/media/data1/mcr/zl/zl/AttackForDataBlinder/result/TIFS/ACS/'
-filePathPlain = "/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/usa_2_plain.csv"
-root = "/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/usa_2_cipher.csv"
+out = '/CCS2026//result/TIFS/ACS/'
+filePathPlain = "/CCS2026//dataset/usa_2_plain.csv"
+root = "/CCS2026//dataset/usa_2_cipher.csv"
 
 
 # base = [500, 11816, 23132, 34448, 45764, 57080, 68396, 79712, 91028, 102344, 113657]
