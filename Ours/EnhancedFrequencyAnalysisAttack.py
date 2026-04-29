@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 import pandas as pd
 import numpy as np
