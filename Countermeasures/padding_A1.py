@@ -28,8 +28,8 @@ def process_matrix_from_mapping(matrix, columns, replacement_dict):
 
 year = 2010
 
-out = f'/media/ices/machenrry/zl/Attack for DataBlinder/result/CCS/A1-Padding/' 
-root = f"/media/ices/machenrry/zl/Attack for DataBlinder/dataset/text_508029.csv"
+out = f'/CCS2026/result/CCS/A1-Padding/' 
+root = f"/CCS2026/dataset/text_508029.csv"
 base = [500, 725, 1050, 1525, 2210, 3205, 4645, 6735, 9765, 14160, 20530, 29770, 43170, 62600, 90750, 131600, 190850, 276750, 401300, 508029]
 frac = 0.9
 
@@ -95,7 +95,7 @@ for i in base:
         matrix_cipher_sse = functions.generate_submatrix(matrix_cipher, selected_columns_sse)
         matrix_cipher_sse_after_mapping = process_matrix_from_mapping(matrix_cipher, specific_columns, value_mapping)
 
-        mapping, totalTime, accuracy, keyword_count_sse = AttackUsingAuxiliaryWeight(matrix_cipher_sse_after_mapping, matrix_plain, selected_columns_sse, "PUDF", [5, 60, 35], max_time=300, recovery_threshold=0.95)
+        mapping, totalTime, accuracy, keyword_count_sse = AttackUsingAuxiliaryWeight(matrix_cipher_sse_after_mapping, matrix_plain, selected_columns_sse, "PUDF", [5, 60, 35], max_time=300, recovery_threshold=0.9)
 
         value_mapping.update(mapping)
 
