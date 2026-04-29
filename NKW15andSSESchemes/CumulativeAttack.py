@@ -1,5 +1,5 @@
 import sys # 引用上级目录中的文件
-sys.path.append("/media/ices/machenrry/zl/Attack for DataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 import random
 import time
