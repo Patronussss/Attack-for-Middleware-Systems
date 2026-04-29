@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/media/data1/mcr/zl/zl/AttackForDataBlinder") 
+sys.path.append("/CCS2026/") 
 import functions
 import csv
 from tqdm import tqdm
@@ -194,13 +194,13 @@ def AttributeRecoveryAttack(matrix_cipher, matrix_plain, selected_columns_cipher
 if __name__ == '__main__':
     year = 2010
 
-    root = f"/media/data1/mcr/zl/zl/AttackForDataBlinder/dataset/text_508029.csv"
+    root = f"/CCS2026//dataset/text_508029.csv"
 
     base = [500, 725, 1050, 1525, 2210, 3205, 4645, 6735, 9765, 14160, 20530, 29770, 43170, 62600, 90750, 131600, 190850, 276750, 401300, 508029]
 
     matrix = functions.read_csv_to_matrix(root)
 
-    out = f'/media/data1/mcr/zl/zl/AttackForDataBlinder/result/CCS/A2-{year}/oringinal/'
+    out = f'/CCS2026//result/CCS/A2-{year}/oringinal/'
     print(out)
     if not os.path.exists(out):
         os.makedirs(out)
