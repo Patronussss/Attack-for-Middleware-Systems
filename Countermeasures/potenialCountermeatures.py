@@ -24,7 +24,7 @@ def process_matrix_from_mapping(matrix, columns):
     return matrix
 
 index_list = [4]
-filePathPlain = f"/media/ices/machenrry/zl/Attack for DataBlinder/dataset/2015.csv"
+filePathPlain = f"/CCS2026/dataset/2015.csv"
 matrix_plain = functions.read_csv_to_matrix(filePathPlain)
 
 out = 'result/CCS/A2_Potenial/'
